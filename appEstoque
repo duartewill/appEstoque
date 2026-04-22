@@ -1,0 +1,191 @@
+import React, { useState, useEffect } from 'react';
+import {View, Text, TextInput, Button, FlatList, TouchableOpacity, StyleSheet,} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export default function App() {
+  const [material, setMaterial] = useState('');
+  const [quantidade, setQuantidade] = useState('');
+  const [lista, setLista] = useState<any[]>([]);
+
+  // Carregar dados ao abrir
+  useEffect(() => {
+    carregarDados();
+  }, []);
+
+async function carregarDados() {
+    const dados = await AsyncStorage.getItem('materiais');
+    if (dados) {
+      setLista(JSON.parse(dados));
+    }
+  }
+async function salvarDados(novoItem: any) {
+    const novaLista = [...lista, novoItem];
+    setLista(novaLista);
+    await AsyncStorage.setItem('materiais', JSON.stringify(novaLista));
+  }
+
+function entrada() {
+    if (!material || !quantidade) return;
+
+    const item = {
+      material,
+      quantidade: Number(quantidade),
+      tipo: 'Entrada',
+    };
+
+    salvarDados(item);
+    limparCampos();
+  }
+
+  function saida() {
+    if (!material || !quantidade) return;
+
+    const item = {
+      material,
+      quantidade: Number(quantidade),
+      tipo: 'Saída',
+    };
+
+    salvarDados(item);
+    limparCampos();
+  }
+
+  function limparCampos() {
+    setMaterial('');
+    setQuantidade('');
+  }
+
+  async function removerItem(index: number) {
+    const novaLista = lista.filter((_, i) => i !== index);
+    setLista(novaLista);
+    await AsyncStorage.setItem('materiais', JSON.stringify(novaLista));
+  }
+
+  async function limparHistorico() {
+    await AsyncStorage.removeItem('materiais');
+    setLista([]);
+  }
+
+  function calcularEstoque() {
+    let total = 0;
+
+    lista.forEach(item => {
+      if (item.tipo === 'Entrada') {
+        total += item.quantidade;
+      } else {
+        total -= item.quantidade;
+      }
+    });
+
+    return total;
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.titulo}>Controle de Materiais</Text>
+
+      <Text style={styles.estoque}>
+        Estoque Total: {calcularEstoque()}
+      </Text>
+
+      <TextInput
+        placeholder="Nome do material"
+        value={material}
+        onChangeText={setMaterial}
+        style={styles.input}
+      />
+
+      <TextInput
+        placeholder="Quantidade"
+        value={quantidade}
+        onChangeText={setQuantidade}
+        keyboardType="numeric"
+        style={styles.input}
+      />
+
+      <Button title="Entrada" onPress={entrada} />
+      <Button title="Saída" onPress={saida} />
+
+      <Text style={styles.subtitulo}>Histórico</Text>
+
+      <FlatList
+        data={lista}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item, index }) => (
+          <TouchableOpacity onPress={() => removerItem(index)}>
+            <Text
+              style={[
+                styles.item,
+                item.tipo === 'Entrada'
+                  ? styles.entrada
+                  : styles.saida,
+              ]}
+            >
+              {item.tipo} - {item.material} ({item.quantidade})
+            </Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      <TouchableOpacity
+        style={styles.botaoLimpar}
+        onPress={limparHistorico}
+      >
+        <Text style={styles.textoBotao}>Limpar Histórico</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ESTILOS (fica no final, se nao quebra o codigo)
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#f2f2f2',
+  },
+  titulo: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  estoque: {
+    fontSize: 18,
+    marginBottom: 10,
+  },
+  subtitulo: {
+    fontSize: 18,
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  item: {
+    padding: 10,
+    borderRadius: 6,
+    marginBottom: 5,
+  },
+  entrada: {
+    backgroundColor: '#d4edda',
+  },
+  saida: {
+    backgroundColor: '#f8d7da',
+  },
+  botaoLimpar: {
+    backgroundColor: '#555',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 15,
+  },
+  textoBotao: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+});
