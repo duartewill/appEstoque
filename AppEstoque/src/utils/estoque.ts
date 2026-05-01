@@ -1,4 +1,4 @@
-import { Item } from '../types/Item';
+import { Item } from '../types/item';
 
 export function calcularEstoque(lista: Item[]) {
   return lista.reduce((total, item) => {

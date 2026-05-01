@@ -1,105 +1,36 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import 'react-native-gesture-handler';
 
-import { Item } from './types/item';
-import { calcularEstoque } from './utils/estoque';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import InputField from './components/InputField';
-import BotaoAcao from './components/BotaoAcao';
-import ItemLista from './components/ItemLista';
+import Home from './screens/Home';
+import Clients from './screens/Clients';
+import Options from './screens/Options';
 
-import {
-  initDB,
-  inserirItem,
-  listarItens,
-  removerItem,
-} from './services/database';
+const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const [material, setMaterial] = useState('');
-  const [quantidade, setQuantidade] = useState('');
-  const [lista, setLista] = useState<Item[]>([]);
-
-  useEffect(() => {
-  initDB();
-  carregarItens();
-}, []);
-
-  function carregarItens() {
-  const dados = listarItens() as Item[];
-  console.log('DADOS:', dados);
-  setLista(dados);
-}
-
-  function adicionar(tipo: 'Entrada' | 'Saída') {
-    if (!material || !quantidade) return;
-
-    inserirItem(material, Number(quantidade), tipo);
-    carregarItens();
-    limparCampos();
-  }
-
-  function limparCampos() {
-    setMaterial('');
-    setQuantidade('');
-  }
-
-  function remover(id: number) {
-    removerItem(id);
-    carregarItens();
-  }
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.titulo}>Controle de Materiais</Text>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen
+          name="Home"
+          component={Home}
+          options={{ title: 'Início' }}
+        />
 
-      <Text style={styles.estoque}>
-        Estoque Total: {calcularEstoque(lista)}
-      </Text>
+        <Stack.Screen
+          name="Clients"
+          component={Clients}
+          options={{ title: 'Clientes' }}
+        />
 
-      <InputField
-        placeholder="Nome do material"
-        value={material}
-        onChangeText={setMaterial}
-      />
-
-      <InputField
-        placeholder="Quantidade"
-        value={quantidade}
-        onChangeText={setQuantidade}
-        numeric
-      />
-
-      <BotaoAcao titulo="Entrada" onPress={() => adicionar('Entrada')} />
-      <BotaoAcao titulo="Saída" onPress={() => adicionar('Saída')} />
-
-      <FlatList
-        data={lista}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <ItemLista
-            item={item}
-            onPress={() => remover(item.id)}
-          />
-        )}
-      />
-    </View>
+        <Stack.Screen
+          name="Options"
+          component={Options}
+          options={{ title: 'Configurações' }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#f2f2f2',
-  },
-  titulo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  estoque: {
-    fontSize: 18,
-    marginBottom: 10,
-  },
-});
